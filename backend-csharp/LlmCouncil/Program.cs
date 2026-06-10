@@ -30,6 +30,18 @@ builder.Services.Configure<CouncilOptions>(opts =>
     var liteLlmKey = Environment.GetEnvironmentVariable("LITELLM_API_KEY");
     if (!string.IsNullOrWhiteSpace(liteLlmKey))
         opts.LiteLlmApiKey = liteLlmKey;
+
+    var councilModels = Environment.GetEnvironmentVariable("COUNCIL_MODELS");
+    if (!string.IsNullOrWhiteSpace(councilModels))
+    {
+        opts.CouncilModels = councilModels
+            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .ToList();
+    }
+
+    var chairmanModel = Environment.GetEnvironmentVariable("CHAIRMAN_MODEL");
+    if (!string.IsNullOrWhiteSpace(chairmanModel))
+        opts.ChairmanModel = chairmanModel;
 });
 
 builder.Services.AddHttpClient<OpenRouterService>();

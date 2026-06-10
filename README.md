@@ -72,6 +72,10 @@ LLM_PROVIDER=LiteLLM
 LITELLM_API_URL=http://localhost:4000/v1/chat/completions
 # Optional if your LiteLLM server requires auth:
 # LITELLM_API_KEY=your-key
+
+# Council model configuration (comma-separated list)
+COUNCIL_MODELS=openai/gpt-5.1,google/gemini-3-pro-preview,anthropic/claude-sonnet-4.5,x-ai/grok-4
+CHAIRMAN_MODEL=google/gemini-3-pro-preview
 ```
 
 You can also configure provider settings via `appsettings.json`:
@@ -87,23 +91,9 @@ You can also configure provider settings via `appsettings.json`:
 }
 ```
 
-### 3. Configure models (optional)
+### 3. Configure models
 
-Edit `backend-csharp/LlmCouncil/appsettings.json`:
-
-```json
-{
-  "Council": {
-    "CouncilModels": [
-      "openai/gpt-5.1",
-      "google/gemini-3-pro-preview",
-      "anthropic/claude-sonnet-4.5",
-      "x-ai/grok-4"
-    ],
-    "ChairmanModel": "google/gemini-3-pro-preview"
-  }
-}
-```
+Set `COUNCIL_MODELS` and `CHAIRMAN_MODEL` in `.env`.
 
 ## Running the application
 
