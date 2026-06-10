@@ -1,0 +1,46 @@
+using dotenv.net;
+using LlmCouncil.Services;
+
+// Load .env file from the project root (two levels up from the build output)
+DotEnv.Load(options: new DotEnvOptions(probeForEnv: true, probeLevelsToSearch: 6));
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Bind CouncilOptions; allow individual keys to be overridden via env vars
+// e.g.  Council__OpenRouterApiKey=sk-or-...  or  OPENROUTER_API_KEY=...
+builder.Configuration.AddEnvironmentVariables();
+
+builder.Services.Configure<CouncilOptions>(opts =>
+{
+    builder.Configuration.GetSection(CouncilOptions.SectionName).Bind(opts);
+
+    // Support the plain OPENROUTER_API_KEY env var used by the Python version
+    var envKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
+    if (!string.IsNullOrWhiteSpace(envKey))
+        opts.OpenRouterApiKey = envKey;
+});
+
+builder.Services.AddHttpClient<OpenRouterService>();
+builder.Services.AddSingleton<StorageService>();
+builder.Services.AddScoped<CouncilService>();
+
+builder.Services.AddControllers();
+
+// CORS – mirror the Python backend's allowed origins
+builder.Services.AddCors(o => o.AddDefaultPolicy(policy =>
+    policy.WithOrigins("http://localhost:5173", "http://localhost:3000")
+          .AllowAnyMethod()
+          .AllowAnyHeader()
+          .AllowCredentials()));
+
+var app = builder.Build();
+
+app.UseCors();
+
+// Health check
+app.MapGet("/", () => new { status = "ok", service = "LLM Council API (C#)" });
+
+app.UseAuthorization();
+app.MapControllers();
+
+app.Run();

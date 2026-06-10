@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="LlmCouncil.Tests/LlmCouncil.Tests.csproj" />
+  <Project Path="LlmCouncil/LlmCouncil.csproj" />
+</Solution>
