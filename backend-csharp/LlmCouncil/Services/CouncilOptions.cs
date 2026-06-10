@@ -18,16 +18,10 @@ public class CouncilOptions
     public string LiteLlmApiKey { get; set; } = string.Empty;
 
     /// <summary>Council member model identifiers.</summary>
-    public List<string> CouncilModels { get; set; } =
-    [
-        "openai/gpt-5.1",
-        "google/gemini-3-pro-preview",
-        "anthropic/claude-sonnet-4.5",
-        "x-ai/grok-4",
-    ];
+    public List<string> CouncilModels { get; set; } = [];
 
     /// <summary>Chairman model that synthesizes the final response.</summary>
-    public string ChairmanModel { get; set; } = "google/gemini-3-pro-preview";
+    public string ChairmanModel { get; set; } = string.Empty;
 
     /// <summary>OpenRouter chat completions endpoint.</summary>
     public string OpenRouterApiUrl { get; set; } = "https://openrouter.ai/api/v1/chat/completions";
