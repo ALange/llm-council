@@ -18,6 +18,18 @@ builder.Services.Configure<CouncilOptions>(opts =>
     var envKey = Environment.GetEnvironmentVariable("OPENROUTER_API_KEY");
     if (!string.IsNullOrWhiteSpace(envKey))
         opts.OpenRouterApiKey = envKey;
+
+    var provider = Environment.GetEnvironmentVariable("LLM_PROVIDER");
+    if (!string.IsNullOrWhiteSpace(provider))
+        opts.LlmProvider = provider;
+
+    var liteLlmUrl = Environment.GetEnvironmentVariable("LITELLM_API_URL");
+    if (!string.IsNullOrWhiteSpace(liteLlmUrl))
+        opts.LiteLlmApiUrl = liteLlmUrl;
+
+    var liteLlmKey = Environment.GetEnvironmentVariable("LITELLM_API_KEY");
+    if (!string.IsNullOrWhiteSpace(liteLlmKey))
+        opts.LiteLlmApiKey = liteLlmKey;
 });
 
 builder.Services.AddHttpClient<OpenRouterService>();
