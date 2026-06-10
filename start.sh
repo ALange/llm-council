@@ -1,31 +1,26 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# start-csharp.sh – launch the C# backend and React frontend together
+set -e
 
-# LLM Council - Start script
+ROOT="$(cd "$(dirname "$0")" && pwd)"
 
-echo "Starting LLM Council..."
-echo ""
-
-# Start backend
-echo "Starting backend on http://localhost:8001..."
-uv run python -m backend.main &
+# Backend
+echo "Starting C# backend on http://localhost:8001 ..."
+(cd "$ROOT/backend-csharp/LlmCouncil" && dotnet run) &
 BACKEND_PID=$!
 
-# Wait a bit for backend to start
-sleep 2
-
-# Start frontend
-echo "Starting frontend on http://localhost:5173..."
-cd frontend
-npm run dev &
+# Frontend
+echo "Starting React frontend on http://localhost:5173 ..."
+(cd "$ROOT/frontend" && npm run dev) &
 FRONTEND_PID=$!
 
 echo ""
-echo "✓ LLM Council is running!"
-echo "  Backend:  http://localhost:8001"
-echo "  Frontend: http://localhost:5173"
+echo "  Backend PID : $BACKEND_PID"
+echo "  Frontend PID: $FRONTEND_PID"
 echo ""
-echo "Press Ctrl+C to stop both servers"
+echo "  Open http://localhost:5173 in your browser."
+echo "  Press Ctrl+C to stop both servers."
 
-# Wait for Ctrl+C
-trap "kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit" SIGINT SIGTERM
-wait
+# Wait for both and forward SIGINT
+trap "kill $BACKEND_PID $FRONTEND_PID 2>/dev/null; exit 0" INT TERM
+wait $BACKEND_PID $FRONTEND_PID
