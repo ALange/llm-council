@@ -1,0 +1,16 @@
+## .NET build artifacts
+bin/
+obj/
+*.user
+.vs/
+*.suo
+*.swp
+
+## Published output
+publish/
+
+## Data directory (conversation JSON files)
+data/
+
+## Environment file (contains API key)
+.env
