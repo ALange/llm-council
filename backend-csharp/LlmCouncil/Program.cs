@@ -34,14 +34,23 @@ builder.Services.Configure<CouncilOptions>(opts =>
     var councilModels = Environment.GetEnvironmentVariable("COUNCIL_MODELS");
     if (!string.IsNullOrWhiteSpace(councilModels))
     {
-        opts.CouncilModels = councilModels
+        var parsedCouncilModels = councilModels
             .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
             .ToList();
+
+        if (parsedCouncilModels.Count > 0)
+            opts.CouncilModels = parsedCouncilModels;
     }
 
     var chairmanModel = Environment.GetEnvironmentVariable("CHAIRMAN_MODEL");
     if (!string.IsNullOrWhiteSpace(chairmanModel))
         opts.ChairmanModel = chairmanModel;
+
+    if (opts.CouncilModels.Count == 0)
+        throw new InvalidOperationException("Council models are not configured. Set COUNCIL_MODELS in .env or Council:CouncilModels in appsettings.");
+
+    if (string.IsNullOrWhiteSpace(opts.ChairmanModel))
+        throw new InvalidOperationException("Chairman model is not configured. Set CHAIRMAN_MODEL in .env or Council:ChairmanModel in appsettings.");
 });
 
 builder.Services.AddHttpClient<OpenRouterService>();

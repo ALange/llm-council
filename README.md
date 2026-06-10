@@ -91,9 +91,10 @@ You can also configure provider settings via `appsettings.json`:
 }
 ```
 
-### 3. Configure models
+### 3. Configure models (required)
 
 Set `COUNCIL_MODELS` and `CHAIRMAN_MODEL` in `.env`.
+The backend will fail fast at startup if these are not configured.
 
 ## Running the application
 
