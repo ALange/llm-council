@@ -19,7 +19,33 @@ public class StorageService(IOptions<CouncilOptions> options, ILogger<StorageSer
 
     private void EnsureDataDir() => Directory.CreateDirectory(_dataDir);
 
-    private string ConversationPath(string id) => Path.Combine(_dataDir, $"{id}.json");
+    /// <summary>
+    /// Validate that <paramref name="id"/> is a well-formed GUID before using it as a filename.
+    /// This prevents path traversal: GUID strings only contain hex digits and hyphens.
+    /// Returns the canonical GUID string so the caller can use the sanitised form, not raw user input.
+    /// </summary>
+    private static string ValidateId(string id)
+    {
+        if (!Guid.TryParse(id, out var guid))
+            throw new ArgumentException("Invalid conversation id format. Expected a valid GUID.", nameof(id));
+        // Return the canonical representation — not the original user-supplied string
+        return guid.ToString("D");
+    }
+
+    private string ConversationPath(string id)
+    {
+        var safeId = ValidateId(id);
+        var path = Path.GetFullPath(Path.Combine(_dataDir, $"{safeId}.json"));
+        var baseDir = Path.GetFullPath(_dataDir);
+        if (!path.StartsWith(baseDir + Path.DirectorySeparatorChar, StringComparison.Ordinal)
+            && path != baseDir)
+            throw new InvalidOperationException("Path traversal detected.");
+        return path;
+    }
+
+    /// <summary>Remove newlines from a value before including it in a log entry.</summary>
+    private static string SanitizeForLog(string value) =>
+        value.Replace('\n', '_').Replace('\r', '_');
 
     public Conversation CreateConversation(string id)
     {
@@ -47,7 +73,7 @@ public class StorageService(IOptions<CouncilOptions> options, ILogger<StorageSer
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to read conversation {Id}", id);
+            logger.LogError(ex, "Failed to read conversation {Id}", SanitizeForLog(id));
             return null;
         }
     }

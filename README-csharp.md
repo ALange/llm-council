@@ -122,7 +122,7 @@ cd backend-csharp
 dotnet test
 ```
 
-All 18 unit tests cover:
+All 19 unit tests cover:
 - `CouncilService.ParseRankingFromText` — "FINAL RANKING:" section extraction and fallbacks
 - `CouncilService.CalculateAggregateRankings` — average rank computation with agreement and disagreement cases
 - `StorageService` — conversation CRUD, message appending, title updates, listing order

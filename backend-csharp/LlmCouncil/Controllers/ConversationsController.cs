@@ -148,7 +148,8 @@ public class ConversationsController(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error in streaming message for conversation {ConversationId}", conversationId);
+            logger.LogError(ex, "Error in streaming message for conversation {ConversationId}",
+                conversationId.Replace('\n', '_').Replace('\r', '_'));
             await SendEventAsync(new { type = "error", message = ex.Message });
         }
     }

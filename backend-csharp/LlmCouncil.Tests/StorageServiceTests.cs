@@ -38,9 +38,15 @@ public class StorageServiceTests : IDisposable
     }
 
     [Fact]
+    public void GetConversation_ThrowsForNonGuidId()
+    {
+        Assert.Throws<ArgumentException>(() => _storage.GetConversation("../../etc/passwd"));
+    }
+
+    [Fact]
     public void GetConversation_ReturnsNullForMissingId()
     {
-        var result = _storage.GetConversation("nonexistent-id");
+        var result = _storage.GetConversation(Guid.NewGuid().ToString());
         Assert.Null(result);
     }
 
@@ -71,7 +77,7 @@ public class StorageServiceTests : IDisposable
     public void AddUserMessage_ThrowsForMissingConversation()
     {
         Assert.Throws<KeyNotFoundException>(() =>
-            _storage.AddUserMessage("missing-id", "content"));
+            _storage.AddUserMessage(Guid.NewGuid().ToString(), "content"));
     }
 
     [Fact]
