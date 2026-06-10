@@ -30,8 +30,12 @@ public class OpenRouterService(HttpClient httpClient, IOptions<CouncilOptions> o
     {
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, _options.OpenRouterApiUrl);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.OpenRouterApiKey);
+            var request = new HttpRequestMessage(HttpMethod.Post, GetChatCompletionsUrl());
+            var apiKey = GetApiKey();
+            if (!string.IsNullOrWhiteSpace(apiKey))
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            }
 
             var body = new OpenRouterRequest
             {
@@ -83,5 +87,24 @@ public class OpenRouterService(HttpClient httpClient, IOptions<CouncilOptions> o
 
         return modelList.Zip(results)
                         .ToDictionary(pair => pair.First, pair => pair.Second);
+    }
+
+    private string GetChatCompletionsUrl()
+    {
+        return IsLiteLlmProvider()
+            ? _options.LiteLlmApiUrl
+            : _options.OpenRouterApiUrl;
+    }
+
+    private string GetApiKey()
+    {
+        return IsLiteLlmProvider()
+            ? _options.LiteLlmApiKey
+            : _options.OpenRouterApiKey;
+    }
+
+    private bool IsLiteLlmProvider()
+    {
+        return string.Equals(_options.LlmProvider, "LiteLLM", StringComparison.OrdinalIgnoreCase);
     }
 }

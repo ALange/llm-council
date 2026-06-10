@@ -18,7 +18,7 @@ Instead of asking a single LLM your question, LLM Council groups multiple models
 | Layer | Technology |
 |---|---|
 | Backend API | ASP.NET Core 10 (`backend-csharp/`) |
-| LLM access | [OpenRouter](https://openrouter.ai/) |
+| LLM access | [OpenRouter](https://openrouter.ai/) or local [LiteLLM](https://docs.litellm.ai/) |
 | Storage | JSON files in `data/conversations/` |
 | Frontend | React + Vite (unchanged, in `frontend/`) |
 
@@ -33,7 +33,7 @@ backend-csharp/
 │   │   └── CouncilModels.cs             # Request/response/storage models
 │   ├── Services/
 │   │   ├── CouncilOptions.cs            # Typed configuration
-│   │   ├── OpenRouterService.cs         # HTTP client for OpenRouter
+│   │   ├── OpenRouterService.cs         # HTTP client for OpenRouter / LiteLLM
 │   │   ├── CouncilService.cs            # 3-stage orchestration logic
 │   │   └── StorageService.cs            # JSON file persistence
 │   ├── Program.cs                       # DI wiring + CORS + middleware
@@ -49,7 +49,7 @@ backend-csharp/
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - [Node.js 18+](https://nodejs.org/) (for the frontend)
-- An [OpenRouter](https://openrouter.ai/) API key
+- Either an [OpenRouter](https://openrouter.ai/) API key or a local LiteLLM endpoint
 
 ### 1. Install frontend dependencies
 
@@ -59,20 +59,30 @@ npm install
 cd ..
 ```
 
-### 2. Configure your API key
+### 2. Configure your provider
 
 Create a `.env` file in the **project root** (same location as the original Python version):
 
 ```bash
+# OpenRouter mode (default)
 OPENROUTER_API_KEY=sk-or-v1-...
+
+# LiteLLM mode (optional)
+LLM_PROVIDER=LiteLLM
+LITELLM_API_URL=http://localhost:4000/v1/chat/completions
+# Optional if your LiteLLM server requires auth:
+# LITELLM_API_KEY=your-key
 ```
 
-You can also pass the key as an environment variable or via `appsettings.json`:
+You can also configure provider settings via `appsettings.json`:
 
 ```json
 {
   "Council": {
-    "OpenRouterApiKey": "sk-or-v1-..."
+    "LlmProvider": "OpenRouter",
+    "OpenRouterApiKey": "sk-or-v1-...",
+    "LiteLlmApiUrl": "http://localhost:4000/v1/chat/completions",
+    "LiteLlmApiKey": ""
   }
 }
 ```
