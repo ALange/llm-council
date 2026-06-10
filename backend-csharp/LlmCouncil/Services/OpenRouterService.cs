@@ -63,26 +63,7 @@ public class OpenRouterService(HttpClient httpClient, IOptions<CouncilOptions> o
             {
                 Content = message.Content,
                 ReasoningDetails = message.ReasoningDetails,
-            }
-
-            private string GetChatCompletionsUrl()
-            {
-                return IsLiteLlmProvider()
-                    ? _options.LiteLlmApiUrl
-                    : _options.OpenRouterApiUrl;
-            }
-
-            private string GetApiKey()
-            {
-                return IsLiteLlmProvider()
-                    ? _options.LiteLlmApiKey
-                    : _options.OpenRouterApiKey;
-            }
-
-            private bool IsLiteLlmProvider()
-            {
-                return string.Equals(_options.LlmProvider, "LiteLLM", StringComparison.OrdinalIgnoreCase);
-            }
+            };
         }
         catch (Exception ex)
         {
@@ -106,5 +87,24 @@ public class OpenRouterService(HttpClient httpClient, IOptions<CouncilOptions> o
 
         return modelList.Zip(results)
                         .ToDictionary(pair => pair.First, pair => pair.Second);
+    }
+
+    private string GetChatCompletionsUrl()
+    {
+        return IsLiteLlmProvider()
+            ? _options.LiteLlmApiUrl
+            : _options.OpenRouterApiUrl;
+    }
+
+    private string GetApiKey()
+    {
+        return IsLiteLlmProvider()
+            ? _options.LiteLlmApiKey
+            : _options.OpenRouterApiKey;
+    }
+
+    private bool IsLiteLlmProvider()
+    {
+        return string.Equals(_options.LlmProvider, "LiteLLM", StringComparison.OrdinalIgnoreCase);
     }
 }
