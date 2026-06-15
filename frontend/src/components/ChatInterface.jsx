@@ -9,6 +9,7 @@ export default function ChatInterface({
   conversation,
   onSendMessage,
   isLoading,
+  finalOnly = false,
 }) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
@@ -73,22 +74,22 @@ export default function ChatInterface({
                   <div className="message-label">LLM Council</div>
 
                   {/* Stage 1 */}
-                  {msg.loading?.stage1 && (
+                  {!finalOnly && msg.loading?.stage1 && (
                     <div className="stage-loading">
                       <div className="spinner"></div>
                       <span>Running Stage 1: Collecting individual responses...</span>
                     </div>
                   )}
-                  {msg.stage1 && <Stage1 responses={msg.stage1} />}
+                  {!finalOnly && msg.stage1 && <Stage1 responses={msg.stage1} />}
 
                   {/* Stage 2 */}
-                  {msg.loading?.stage2 && (
+                  {!finalOnly && msg.loading?.stage2 && (
                     <div className="stage-loading">
                       <div className="spinner"></div>
                       <span>Running Stage 2: Peer rankings...</span>
                     </div>
                   )}
-                  {msg.stage2 && (
+                  {!finalOnly && msg.stage2 && (
                     <Stage2
                       rankings={msg.stage2}
                       labelToModel={msg.metadata?.label_to_model}

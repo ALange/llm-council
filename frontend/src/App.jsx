@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
 import { api } from './api';
@@ -9,6 +9,10 @@ function App() {
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const finalOnly = useMemo(
+    () => new URLSearchParams(window.location.search).get('finalOnly') === 'true',
+    []
+  );
 
   // Load conversations on mount
   useEffect(() => {
@@ -193,6 +197,7 @@ function App() {
         conversation={currentConversation}
         onSendMessage={handleSendMessage}
         isLoading={isLoading}
+        finalOnly={finalOnly}
       />
     </div>
   );
