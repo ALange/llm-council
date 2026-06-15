@@ -1,18 +1,16 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
 import { api } from './api';
 import './App.css';
+
+const finalOnly = new URLSearchParams(window.location.search).get('finalOnly') === 'true';
 
 function App() {
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const finalOnly = useMemo(
-    () => new URLSearchParams(window.location.search).get('finalOnly') === 'true',
-    []
-  );
 
   // Load conversations on mount
   useEffect(() => {
@@ -173,7 +171,7 @@ function App() {
           default:
             console.log('Unknown event type:', eventType);
         }
-      });
+      }, finalOnly);
     } catch (error) {
       console.error('Failed to send message:', error);
       // Remove optimistic messages on error
