@@ -6,6 +6,14 @@ const emptyConfig = {
   chairmanModelKey: '',
 };
 
+
+const generateEndpointId = () => {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+  return `endpoint-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
 const normalizeConfig = (config) => ({
   endpoints: config?.endpoints ?? [],
   councilModelKeys: config?.councilModelKeys ?? config?.council_model_keys ?? [],
@@ -47,7 +55,7 @@ export default function ConfigurationPortal({
       endpoints: [
         ...config.endpoints,
         {
-          id: crypto.randomUUID().replaceAll('-', ''),
+          id: generateEndpointId(),
           name: 'New Endpoint',
           modelsUrl: 'http://localhost:3000/v1/models',
           apiKey: '',

@@ -8,7 +8,7 @@ import './App.css';
 
 const normalizePortalConfig = (config) => ({
   endpoints: (config?.endpoints ?? []).map((endpoint) => ({
-    id: endpoint.id ?? endpoint.id,
+    id: endpoint.id,
     name: endpoint.name ?? '',
     modelsUrl: endpoint.modelsUrl ?? endpoint.models_url ?? '',
     apiKey: endpoint.apiKey ?? endpoint.api_key ?? '',

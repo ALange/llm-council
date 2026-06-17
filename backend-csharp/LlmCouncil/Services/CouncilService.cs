@@ -1,8 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using LlmCouncil.Models;
-using Microsoft.Extensions.Options;
-
 namespace LlmCouncil.Services;
 
 /// <summary>
@@ -11,10 +9,8 @@ namespace LlmCouncil.Services;
 public partial class CouncilService(
     OpenRouterService openRouter,
     CouncilConfigurationService configurationService,
-    IOptions<CouncilOptions> options,
     ILogger<CouncilService> logger)
 {
-    private readonly CouncilOptions _options = options.Value;
 
     // ── Stage 1 ───────────────────────────────────────────────────────────────
 
@@ -301,8 +297,8 @@ public partial class CouncilService(
             return ([], [], new Stage3Result
             {
                 Model = "error",
-                Response = _options.CouncilModels.Count == 0
-                    ? "No council models are configured. Open Settings to configure endpoints and models."
+                Response = runtimeConfiguration.CouncilModels.Count == 0
+                    ? "No council models are configured. Open Council Builder to configure endpoints and models."
                     : "All models failed to respond. Please try again.",
             }, new CouncilMetadata());
         }
