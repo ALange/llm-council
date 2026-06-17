@@ -21,25 +21,24 @@ public class OpenRouterService(HttpClient httpClient, IOptions<CouncilOptions> o
     private readonly CouncilOptions _options = options.Value;
 
     /// <summary>
-    /// Query a single model via OpenRouter.  Returns null on failure (graceful degradation).
+    /// Query a single model via configured endpoint. Returns null on failure (graceful degradation).
     /// </summary>
-    public async Task<ModelResponse?> QueryModelAsync(
-        string model,
+    public async Task<ModelResponse?> QueryConfiguredModelAsync(
+        RuntimeCouncilModel configuredModel,
         IEnumerable<OpenRouterMessage> messages,
         TimeSpan? timeout = null)
     {
         try
         {
-            var request = new HttpRequestMessage(HttpMethod.Post, GetChatCompletionsUrl());
-            var apiKey = GetApiKey();
-            if (!string.IsNullOrWhiteSpace(apiKey))
+            var request = new HttpRequestMessage(HttpMethod.Post, configuredModel.ChatCompletionsUrl);
+            if (!string.IsNullOrWhiteSpace(configuredModel.ApiKey))
             {
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", configuredModel.ApiKey);
             }
 
             var body = new OpenRouterRequest
             {
-                Model = model,
+                Model = configuredModel.ModelId,
                 Messages = messages.ToList(),
             };
 
@@ -67,13 +66,51 @@ public class OpenRouterService(HttpClient httpClient, IOptions<CouncilOptions> o
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error querying model {Model}", model);
+            logger.LogError(ex, "Error querying configured model {Model}", configuredModel.DisplayName);
             return null;
         }
     }
 
     /// <summary>
-    /// Query multiple models in parallel, mirroring query_models_parallel().
+    /// Query multiple configured models in parallel.
+    /// </summary>
+    public async Task<List<(RuntimeCouncilModel Model, ModelResponse? Response)>> QueryConfiguredModelsParallelAsync(
+        IEnumerable<RuntimeCouncilModel> models,
+        IEnumerable<OpenRouterMessage> messages)
+    {
+        var modelList = models.ToList();
+        var msgList = messages.ToList();
+
+        var tasks = modelList.Select(m => QueryConfiguredModelAsync(m, msgList));
+        var results = await Task.WhenAll(tasks);
+
+        return modelList.Zip(results, (model, response) => (model, response)).ToList();
+    }
+
+    /// <summary>
+    /// Backward-compatible query path for legacy env-based configuration.
+    /// </summary>
+    public async Task<ModelResponse?> QueryModelAsync(
+        string model,
+        IEnumerable<OpenRouterMessage> messages,
+        TimeSpan? timeout = null)
+    {
+        var configured = new RuntimeCouncilModel
+        {
+            Key = model,
+            ModelId = model,
+            DisplayName = model,
+            ChatCompletionsUrl = GetChatCompletionsUrl(),
+            ApiKey = GetApiKey(),
+            EndpointId = "legacy",
+            EndpointName = "Legacy",
+        };
+
+        return await QueryConfiguredModelAsync(configured, messages, timeout);
+    }
+
+    /// <summary>
+    /// Backward-compatible path for legacy env-based configuration.
     /// </summary>
     public async Task<Dictionary<string, ModelResponse?>> QueryModelsParallelAsync(
         IEnumerable<string> models,

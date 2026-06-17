@@ -45,15 +45,11 @@ builder.Services.Configure<CouncilOptions>(opts =>
     var chairmanModel = Environment.GetEnvironmentVariable("CHAIRMAN_MODEL");
     if (!string.IsNullOrWhiteSpace(chairmanModel))
         opts.ChairmanModel = chairmanModel;
-
-    if (opts.CouncilModels.Count == 0)
-        throw new InvalidOperationException("Council models are not configured. Set COUNCIL_MODELS in .env or Council:CouncilModels in appsettings.");
-
-    if (string.IsNullOrWhiteSpace(opts.ChairmanModel))
-        throw new InvalidOperationException("Chairman model is not configured. Set CHAIRMAN_MODEL in .env or Council:ChairmanModel in appsettings.");
 });
 
+builder.Services.AddHttpClient();
 builder.Services.AddHttpClient<OpenRouterService>();
+builder.Services.AddSingleton<CouncilConfigurationService>();
 builder.Services.AddSingleton<StorageService>();
 builder.Services.AddScoped<CouncilService>();
 

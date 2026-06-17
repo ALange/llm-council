@@ -58,6 +58,56 @@ public class CouncilMetadata
     public List<AggregateRanking> AggregateRankings { get; set; } = [];
 }
 
+// ── Runtime council configuration ─────────────────────────────────────────────
+
+public class EndpointConfiguration
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string ModelsUrl { get; set; } = string.Empty;
+    public string ApiKey { get; set; } = string.Empty;
+    public bool Enabled { get; set; } = true;
+}
+
+public class DiscoveredModel
+{
+    public string Key { get; set; } = string.Empty;
+    public string ModelId { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string EndpointId { get; set; } = string.Empty;
+    public string EndpointName { get; set; } = string.Empty;
+}
+
+public class CouncilPortalConfig
+{
+    public List<EndpointConfiguration> Endpoints { get; set; } = [];
+    public List<string> CouncilModelKeys { get; set; } = [];
+    public string ChairmanModelKey { get; set; } = string.Empty;
+}
+
+public class CouncilConfigurationResponse
+{
+    public CouncilPortalConfig Config { get; set; } = new();
+    public List<DiscoveredModel> DiscoveredModels { get; set; } = [];
+}
+
+public class RuntimeCouncilModel
+{
+    public string Key { get; set; } = string.Empty;
+    public string ModelId { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string EndpointId { get; set; } = string.Empty;
+    public string EndpointName { get; set; } = string.Empty;
+    public string ChatCompletionsUrl { get; set; } = string.Empty;
+    public string ApiKey { get; set; } = string.Empty;
+}
+
+public class RuntimeCouncilConfiguration
+{
+    public List<RuntimeCouncilModel> CouncilModels { get; set; } = [];
+    public RuntimeCouncilModel? ChairmanModel { get; set; }
+}
+
 // ── API response ──────────────────────────────────────────────────────────────
 
 public class MessageResponse

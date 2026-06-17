@@ -1,5 +1,5 @@
 .sidebar {
-  width: 260px;
+  width: 280px;
   background: #f8f8f8;
   border-right: 1px solid #e0e0e0;
   display: flex;
@@ -18,11 +18,10 @@
   color: #333;
 }
 
-.new-conversation-btn {
+.new-conversation-btn,
+.settings-btn {
   width: 100%;
   padding: 10px;
-  background: #4a90e2;
-  border: 1px solid #4a90e2;
   border-radius: 6px;
   color: #fff;
   cursor: pointer;
@@ -31,9 +30,25 @@
   font-weight: 500;
 }
 
+.new-conversation-btn {
+  background: #4a90e2;
+  border: 1px solid #4a90e2;
+  margin-bottom: 8px;
+}
+
 .new-conversation-btn:hover {
   background: #357abd;
   border-color: #357abd;
+}
+
+.settings-btn {
+  background: #6b7280;
+  border: 1px solid #6b7280;
+}
+
+.settings-btn:hover {
+  background: #4b5563;
+  border-color: #4b5563;
 }
 
 .conversation-list {
