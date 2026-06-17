@@ -31,4 +31,7 @@ public class CouncilOptions
 
     /// <summary>Directory where conversation JSON files are stored.</summary>
     public string DataDir { get; set; } = "data/conversations";
+
+    /// <summary>Path to persisted council portal configuration.</summary>
+    public string CouncilConfigPath { get; set; } = "data/council-config.json";
 }

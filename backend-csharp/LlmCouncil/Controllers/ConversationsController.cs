@@ -11,6 +11,7 @@ namespace LlmCouncil.Controllers;
 public class ConversationsController(
     StorageService storage,
     CouncilService council,
+    CouncilConfigurationService configurationService,
     ILogger<ConversationsController> logger) : ControllerBase
 {
     // ── GET /api/conversations ────────────────────────────────────────────────
@@ -85,6 +86,7 @@ public class ConversationsController(
         }
 
         var isFirstMessage = conversation.Messages.Count == 0;
+        var runtimeConfiguration = configurationService.GetRuntimeConfiguration();
 
         Response.ContentType = "text/event-stream";
         Response.Headers.CacheControl = "no-cache";
@@ -112,13 +114,13 @@ public class ConversationsController(
 
             // Stage 1
             await SendEventAsync(new { type = "stage1_start" });
-            var stage1Results = await council.Stage1CollectResponsesAsync(request.Content);
+            var stage1Results = await council.Stage1CollectResponsesAsync(request.Content, runtimeConfiguration);
             if (!request.FinalOnly)
                 await SendEventAsync(new { type = "stage1_complete", data = stage1Results });
 
             // Stage 2
             await SendEventAsync(new { type = "stage2_start" });
-            var (stage2Results, labelToModel) = await council.Stage2CollectRankingsAsync(request.Content, stage1Results);
+            var (stage2Results, labelToModel) = await council.Stage2CollectRankingsAsync(request.Content, stage1Results, runtimeConfiguration);
             var aggregateRankings = CouncilService.CalculateAggregateRankings(stage2Results, labelToModel);
             if (!request.FinalOnly)
                 await SendEventAsync(new
@@ -134,7 +136,7 @@ public class ConversationsController(
 
             // Stage 3
             await SendEventAsync(new { type = "stage3_start" });
-            var stage3Result = await council.Stage3SynthesizeFinalAsync(request.Content, stage1Results, stage2Results);
+            var stage3Result = await council.Stage3SynthesizeFinalAsync(request.Content, stage1Results, stage2Results, runtimeConfiguration);
             await SendEventAsync(new { type = "stage3_complete", data = stage3Result });
 
             // Title

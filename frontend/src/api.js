@@ -113,4 +113,28 @@ export const api = {
       }
     }
   },
+
+  async getConfiguration() {
+    const response = await fetch(`${API_BASE}/api/configuration`);
+    if (!response.ok) {
+      throw new Error('Failed to get configuration');
+    }
+    return response.json();
+  },
+
+  async saveConfiguration(config) {
+    const response = await fetch(`${API_BASE}/api/configuration`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(config),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to save configuration');
+    }
+
+    return response.json();
+  },
 };

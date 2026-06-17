@@ -1,33 +1,39 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using LlmCouncil.Models;
-using Microsoft.Extensions.Options;
-
 namespace LlmCouncil.Services;
 
 /// <summary>
 /// Orchestrates the 3-stage council process, mirroring backend/council.py.
 /// </summary>
-public partial class CouncilService(OpenRouterService openRouter, IOptions<CouncilOptions> options, ILogger<CouncilService> logger)
+public partial class CouncilService(
+    OpenRouterService openRouter,
+    CouncilConfigurationService configurationService,
+    ILogger<CouncilService> logger)
 {
-    private readonly CouncilOptions _options = options.Value;
 
     // ── Stage 1 ───────────────────────────────────────────────────────────────
 
     /// <summary>
     /// Collect individual responses from all council models in parallel.
     /// </summary>
-    public async Task<List<Stage1Result>> Stage1CollectResponsesAsync(string userQuery)
+    public async Task<List<Stage1Result>> Stage1CollectResponsesAsync(
+        string userQuery,
+        RuntimeCouncilConfiguration? runtimeConfiguration = null)
     {
+        runtimeConfiguration ??= configurationService.GetRuntimeConfiguration();
+        if (runtimeConfiguration.CouncilModels.Count == 0)
+            return [];
+
         var messages = new[] { new OpenRouterMessage("user", userQuery) };
-        var responses = await openRouter.QueryModelsParallelAsync(_options.CouncilModels, messages);
+        var responses = await openRouter.QueryConfiguredModelsParallelAsync(runtimeConfiguration.CouncilModels, messages);
 
         return responses
-            .Where(kv => kv.Value is not null)
-            .Select(kv => new Stage1Result
+            .Where(r => r.Response is not null)
+            .Select(r => new Stage1Result
             {
-                Model = kv.Key,
-                Response = kv.Value!.Content ?? string.Empty,
+                Model = r.Model.DisplayName,
+                Response = r.Response!.Content ?? string.Empty,
             })
             .ToList();
     }
@@ -39,8 +45,15 @@ public partial class CouncilService(OpenRouterService openRouter, IOptions<Counc
     /// Returns the ranking results and the label→model mapping used for de-anonymisation.
     /// </summary>
     public async Task<(List<Stage2Result> Rankings, Dictionary<string, string> LabelToModel)>
-        Stage2CollectRankingsAsync(string userQuery, List<Stage1Result> stage1Results)
+        Stage2CollectRankingsAsync(
+            string userQuery,
+            List<Stage1Result> stage1Results,
+            RuntimeCouncilConfiguration? runtimeConfiguration = null)
     {
+        runtimeConfiguration ??= configurationService.GetRuntimeConfiguration();
+        if (runtimeConfiguration.CouncilModels.Count == 0)
+            return ([], []);
+
         // Assign anonymous labels: Response A, Response B, …
         var labels = Enumerable.Range(0, stage1Results.Count)
                                .Select(i => ((char)('A' + i)).ToString())
@@ -92,16 +105,16 @@ public partial class CouncilService(OpenRouterService openRouter, IOptions<Counc
             """;
 
         var messages = new[] { new OpenRouterMessage("user", rankingPrompt) };
-        var responses = await openRouter.QueryModelsParallelAsync(_options.CouncilModels, messages);
+        var responses = await openRouter.QueryConfiguredModelsParallelAsync(runtimeConfiguration.CouncilModels, messages);
 
         var stage2Results = responses
-            .Where(kv => kv.Value is not null)
-            .Select(kv =>
+            .Where(r => r.Response is not null)
+            .Select(r =>
             {
-                var fullText = kv.Value!.Content ?? string.Empty;
+                var fullText = r.Response!.Content ?? string.Empty;
                 return new Stage2Result
                 {
-                    Model = kv.Key,
+                    Model = r.Model.DisplayName,
                     Ranking = fullText,
                     ParsedRanking = ParseRankingFromText(fullText),
                 };
@@ -119,8 +132,21 @@ public partial class CouncilService(OpenRouterService openRouter, IOptions<Counc
     public async Task<Stage3Result> Stage3SynthesizeFinalAsync(
         string userQuery,
         List<Stage1Result> stage1Results,
-        List<Stage2Result> stage2Results)
+        List<Stage2Result> stage2Results,
+        RuntimeCouncilConfiguration? runtimeConfiguration = null)
     {
+        runtimeConfiguration ??= configurationService.GetRuntimeConfiguration();
+
+        var chairman = runtimeConfiguration.ChairmanModel;
+        if (chairman is null)
+        {
+            return new Stage3Result
+            {
+                Model = "error",
+                Response = "Error: Chairman model is not configured.",
+            };
+        }
+
         var stage1Text = string.Join("\n\n", stage1Results.Select(r =>
             $"Model: {r.Model}\nResponse: {r.Response}"));
 
@@ -147,21 +173,21 @@ public partial class CouncilService(OpenRouterService openRouter, IOptions<Counc
             """;
 
         var messages = new[] { new OpenRouterMessage("user", chairmanPrompt) };
-        var response = await openRouter.QueryModelAsync(_options.ChairmanModel, messages);
+        var response = await openRouter.QueryConfiguredModelAsync(chairman, messages);
 
         if (response is null)
         {
-            logger.LogError("Chairman model {Model} failed to respond", _options.ChairmanModel);
+            logger.LogError("Chairman model {Model} failed to respond", chairman.DisplayName);
             return new Stage3Result
             {
-                Model = _options.ChairmanModel,
+                Model = chairman.DisplayName,
                 Response = "Error: Unable to generate final synthesis.",
             };
         }
 
         return new Stage3Result
         {
-            Model = _options.ChairmanModel,
+            Model = chairman.DisplayName,
             Response = response.Content ?? string.Empty,
         };
     }
@@ -233,6 +259,11 @@ public partial class CouncilService(OpenRouterService openRouter, IOptions<Counc
     /// </summary>
     public async Task<string> GenerateConversationTitleAsync(string userQuery)
     {
+        var runtimeConfiguration = configurationService.GetRuntimeConfiguration();
+        var titleModel = runtimeConfiguration.ChairmanModel ?? runtimeConfiguration.CouncilModels.FirstOrDefault();
+        if (titleModel is null)
+            return "New Conversation";
+
         var prompt = $"""
             Generate a very short title (3-5 words maximum) that summarizes the following question.
             The title should be concise and descriptive. Do not use quotes or punctuation in the title.
@@ -243,7 +274,7 @@ public partial class CouncilService(OpenRouterService openRouter, IOptions<Counc
             """;
 
         var messages = new[] { new OpenRouterMessage("user", prompt) };
-        var response = await openRouter.QueryModelAsync("google/gemini-2.5-flash", messages, TimeSpan.FromSeconds(30));
+        var response = await openRouter.QueryConfiguredModelAsync(titleModel, messages, TimeSpan.FromSeconds(30));
 
         if (response?.Content is null) return "New Conversation";
 
@@ -257,20 +288,24 @@ public partial class CouncilService(OpenRouterService openRouter, IOptions<Counc
     public async Task<(List<Stage1Result> Stage1, List<Stage2Result> Stage2, Stage3Result Stage3, CouncilMetadata Metadata)>
         RunFullCouncilAsync(string userQuery)
     {
-        var stage1Results = await Stage1CollectResponsesAsync(userQuery);
+        var runtimeConfiguration = configurationService.GetRuntimeConfiguration();
+
+        var stage1Results = await Stage1CollectResponsesAsync(userQuery, runtimeConfiguration);
 
         if (stage1Results.Count == 0)
         {
             return ([], [], new Stage3Result
             {
                 Model = "error",
-                Response = "All models failed to respond. Please try again.",
+                Response = runtimeConfiguration.CouncilModels.Count == 0
+                    ? "No council models are configured. Open Council Builder to configure endpoints and models."
+                    : "All models failed to respond. Please try again.",
             }, new CouncilMetadata());
         }
 
-        var (stage2Results, labelToModel) = await Stage2CollectRankingsAsync(userQuery, stage1Results);
+        var (stage2Results, labelToModel) = await Stage2CollectRankingsAsync(userQuery, stage1Results, runtimeConfiguration);
         var aggregateRankings = CalculateAggregateRankings(stage2Results, labelToModel);
-        var stage3Result = await Stage3SynthesizeFinalAsync(userQuery, stage1Results, stage2Results);
+        var stage3Result = await Stage3SynthesizeFinalAsync(userQuery, stage1Results, stage2Results, runtimeConfiguration);
 
         var metadata = new CouncilMetadata
         {

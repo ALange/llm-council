@@ -1,55 +1,91 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
+import ConfigurationPortal from './components/ConfigurationPortal';
 import { api } from './api';
 import './App.css';
 
-const finalOnly = new URLSearchParams(window.location.search).get('finalOnly') === 'true';
+const normalizePortalConfig = (config) => ({
+  endpoints: (config?.endpoints ?? []).map((endpoint) => ({
+    id: endpoint.id,
+    name: endpoint.name ?? '',
+    modelsUrl: endpoint.modelsUrl ?? endpoint.models_url ?? '',
+    apiKey: endpoint.apiKey ?? endpoint.api_key ?? '',
+    enabled: endpoint.enabled ?? true,
+  })),
+  councilModelKeys: config?.councilModelKeys ?? config?.council_model_keys ?? [],
+  chairmanModelKey: config?.chairmanModelKey ?? config?.chairman_model_key ?? '',
+});
+
 
 function App() {
+  const finalOnly = useMemo(() => new URLSearchParams(window.location.search).get('finalOnly') === 'true', []);
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [currentConversation, setCurrentConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [viewMode, setViewMode] = useState('chat');
 
-  // Load conversations on mount
-  useEffect(() => {
-    loadConversations();
-  }, []);
+  const [configuration, setConfiguration] = useState({
+    endpoints: [],
+    councilModelKeys: [],
+    chairmanModelKey: '',
+  });
+  const [discoveredModels, setDiscoveredModels] = useState([]);
+  const [isConfigLoading, setIsConfigLoading] = useState(false);
+  const [isConfigSaving, setIsConfigSaving] = useState(false);
 
-  // Load conversation details when selected
-  useEffect(() => {
-    if (currentConversationId) {
-      loadConversation(currentConversationId);
-    }
-  }, [currentConversationId]);
-
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     try {
       const convs = await api.listConversations();
       setConversations(convs);
     } catch (error) {
       console.error('Failed to load conversations:', error);
     }
-  };
+  }, []);
 
-  const loadConversation = async (id) => {
+  const loadConversation = useCallback(async (id) => {
     try {
       const conv = await api.getConversation(id);
       setCurrentConversation(conv);
     } catch (error) {
       console.error('Failed to load conversation:', error);
     }
-  };
+  }, []);
+
+  const loadConfiguration = useCallback(async () => {
+    setIsConfigLoading(true);
+    try {
+      const response = await api.getConfiguration();
+      setConfiguration(normalizePortalConfig(response.config));
+      setDiscoveredModels(response.discoveredModels ?? response.discovered_models ?? []);
+    } catch (error) {
+      console.error('Failed to load configuration:', error);
+    } finally {
+      setIsConfigLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadConversations();
+    loadConfiguration();
+  }, [loadConversations, loadConfiguration]);
+
+  useEffect(() => {
+    if (currentConversationId) {
+      loadConversation(currentConversationId);
+    }
+  }, [currentConversationId, loadConversation]);
 
   const handleNewConversation = async () => {
     try {
       const newConv = await api.createConversation();
-      setConversations([
+      setConversations((prev) => [
         { id: newConv.id, created_at: newConv.created_at, message_count: 0 },
-        ...conversations,
+        ...prev,
       ]);
       setCurrentConversationId(newConv.id);
+      setViewMode('chat');
     } catch (error) {
       console.error('Failed to create conversation:', error);
     }
@@ -57,6 +93,20 @@ function App() {
 
   const handleSelectConversation = (id) => {
     setCurrentConversationId(id);
+    setViewMode('chat');
+  };
+
+  const handleSaveConfiguration = async () => {
+    setIsConfigSaving(true);
+    try {
+      const response = await api.saveConfiguration(normalizePortalConfig(configuration));
+      setConfiguration(normalizePortalConfig(response.config));
+      setDiscoveredModels(response.discoveredModels ?? response.discovered_models ?? []);
+    } catch (error) {
+      console.error('Failed to save configuration:', error);
+    } finally {
+      setIsConfigSaving(false);
+    }
   };
 
   const handleSendMessage = async (content) => {
@@ -190,13 +240,28 @@ function App() {
         currentConversationId={currentConversationId}
         onSelectConversation={handleSelectConversation}
         onNewConversation={handleNewConversation}
+        onOpenSettings={() => setViewMode('settings')}
       />
-      <ChatInterface
-        conversation={currentConversation}
-        onSendMessage={handleSendMessage}
-        isLoading={isLoading}
-        finalOnly={finalOnly}
-      />
+
+      {viewMode === 'settings' ? (
+        <ConfigurationPortal
+          configuration={configuration}
+          discoveredModels={discoveredModels}
+          isLoading={isConfigLoading}
+          isSaving={isConfigSaving}
+          onConfigurationChange={setConfiguration}
+          onSave={handleSaveConfiguration}
+          onRefresh={loadConfiguration}
+          onClose={() => setViewMode('chat')}
+        />
+      ) : (
+        <ChatInterface
+          conversation={currentConversation}
+          onSendMessage={handleSendMessage}
+          isLoading={isLoading}
+          finalOnly={finalOnly}
+        />
+      )}
     </div>
   );
 }
