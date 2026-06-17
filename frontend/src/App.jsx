@@ -17,9 +17,9 @@ const normalizePortalConfig = (config) => ({
   chairmanModelKey: config?.chairmanModelKey ?? config?.chairman_model_key ?? '',
 });
 
-const finalOnly = new URLSearchParams(window.location.search).get('finalOnly') === 'true';
 
 function App() {
+  const finalOnly = new URLSearchParams(window.location.search).get('finalOnly') === 'true';
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [currentConversation, setCurrentConversation] = useState(null);
