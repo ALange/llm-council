@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
 import ConfigurationPortal from './components/ConfigurationPortal';
@@ -19,7 +19,7 @@ const normalizePortalConfig = (config) => ({
 
 
 function App() {
-  const finalOnly = new URLSearchParams(window.location.search).get('finalOnly') === 'true';
+  const finalOnly = useMemo(() => new URLSearchParams(window.location.search).get('finalOnly') === 'true', []);
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [currentConversation, setCurrentConversation] = useState(null);
