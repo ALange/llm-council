@@ -4,7 +4,7 @@ namespace LlmCouncil.Models;
 
 public record CreateConversationRequest;
 
-public record SendMessageRequest(string Content);
+public record SendMessageRequest(string Content, bool FinalOnly = false);
 
 // ── Storage / persistence models ─────────────────────────────────────────────
 
@@ -115,7 +115,7 @@ public class MessageResponse
     public List<Stage1Result> Stage1 { get; set; } = [];
     public List<Stage2Result> Stage2 { get; set; } = [];
     public Stage3Result Stage3 { get; set; } = new();
-    public CouncilMetadata Metadata { get; set; } = new();
+    public CouncilMetadata? Metadata { get; set; }
 }
 
 // ── OpenRouter API shapes ─────────────────────────────────────────────────────

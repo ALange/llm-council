@@ -5,7 +5,6 @@ import ConfigurationPortal from './components/ConfigurationPortal';
 import { api } from './api';
 import './App.css';
 
-
 const normalizePortalConfig = (config) => ({
   endpoints: (config?.endpoints ?? []).map((endpoint) => ({
     id: endpoint.id,
@@ -17,6 +16,8 @@ const normalizePortalConfig = (config) => ({
   councilModelKeys: config?.councilModelKeys ?? config?.council_model_keys ?? [],
   chairmanModelKey: config?.chairmanModelKey ?? config?.chairman_model_key ?? '',
 });
+
+const finalOnly = new URLSearchParams(window.location.search).get('finalOnly') === 'true';
 
 function App() {
   const [conversations, setConversations] = useState([]);
@@ -220,7 +221,7 @@ function App() {
           default:
             console.log('Unknown event type:', eventType);
         }
-      });
+      }, finalOnly);
     } catch (error) {
       console.error('Failed to send message:', error);
       // Remove optimistic messages on error
@@ -258,6 +259,7 @@ function App() {
           conversation={currentConversation}
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
+          finalOnly={finalOnly}
         />
       )}
     </div>

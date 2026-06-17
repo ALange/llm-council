@@ -64,10 +64,10 @@ public class ConversationsController(
 
         return new MessageResponse
         {
-            Stage1 = stage1,
-            Stage2 = stage2,
+            Stage1 = request.FinalOnly ? [] : stage1,
+            Stage2 = request.FinalOnly ? [] : stage2,
             Stage3 = stage3,
-            Metadata = metadata,
+            Metadata = request.FinalOnly ? null : metadata,
         };
     }
 
@@ -115,22 +115,24 @@ public class ConversationsController(
             // Stage 1
             await SendEventAsync(new { type = "stage1_start" });
             var stage1Results = await council.Stage1CollectResponsesAsync(request.Content, runtimeConfiguration);
-            await SendEventAsync(new { type = "stage1_complete", data = stage1Results });
+            if (!request.FinalOnly)
+                await SendEventAsync(new { type = "stage1_complete", data = stage1Results });
 
             // Stage 2
             await SendEventAsync(new { type = "stage2_start" });
             var (stage2Results, labelToModel) = await council.Stage2CollectRankingsAsync(request.Content, stage1Results, runtimeConfiguration);
             var aggregateRankings = CouncilService.CalculateAggregateRankings(stage2Results, labelToModel);
-            await SendEventAsync(new
-            {
-                type = "stage2_complete",
-                data = stage2Results,
-                metadata = new
+            if (!request.FinalOnly)
+                await SendEventAsync(new
                 {
-                    labelToModel,
-                    aggregateRankings,
-                },
-            });
+                    type = "stage2_complete",
+                    data = stage2Results,
+                    metadata = new
+                    {
+                        labelToModel,
+                        aggregateRankings,
+                    },
+                });
 
             // Stage 3
             await SendEventAsync(new { type = "stage3_start" });
